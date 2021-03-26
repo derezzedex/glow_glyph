@@ -9,7 +9,7 @@ mod region;
 
 pub use region::Region;
 
-use pipeline::{Instance, Pipeline};
+use pipeline::{Pipeline, Vertex};
 
 pub use builder::GlyphBrushBuilder;
 pub use glyph_brush::ab_glyph;
@@ -33,7 +33,7 @@ use log::{log_enabled, warn};
 /// Build using a [`GlyphBrushBuilder`](struct.GlyphBrushBuilder.html).
 pub struct GlyphBrush<F = FontArc, H = DefaultSectionHasher> {
     pipeline: Pipeline,
-    glyph_brush: glyph_brush::GlyphBrush<Instance, Extra, F, H>,
+    glyph_brush: glyph_brush::GlyphBrush<[Vertex; 4], Extra, F, H>,
 }
 
 impl<F: Font, H: BuildHasher> GlyphBrush<F, H> {
@@ -209,7 +209,14 @@ impl<F: Font + Sync, H: BuildHasher> GlyphBrush<F, H> {
 
                     pipeline.update_cache(context, offset, size, tex_data);
                 },
-                Instance::from_vertex,
+                |glyph| {
+                    [
+                        Vertex::from_vertex(&glyph, 0),
+                        Vertex::from_vertex(&glyph, 1),
+                        Vertex::from_vertex(&glyph, 2),
+                        Vertex::from_vertex(&glyph, 3),
+                    ]
+                },
             );
 
             match brush_action {
@@ -250,6 +257,10 @@ impl<F: Font + Sync, H: BuildHasher> GlyphBrush<F, H> {
 
         match brush_action.unwrap() {
             BrushAction::Draw(verts) => {
+                let verts = verts
+                    .into_iter()
+                    .flat_map(|v| std::array::IntoIter::new(v))
+                    .collect::<Vec<_>>();
                 self.pipeline.upload(context, &verts);
             }
             BrushAction::ReDraw => {}
