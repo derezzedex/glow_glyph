@@ -427,7 +427,7 @@ unsafe fn create_buffers(
     );
 
     // vec4 color;
-    gl.enable_vertex_attrib_array(0);
+    gl.enable_vertex_attrib_array(3);
     gl.vertex_attrib_pointer_f32(
         3,
         4,
